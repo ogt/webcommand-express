@@ -1,6 +1,8 @@
 var express = require('express'),
     cors = require('cors'),
     webcommand = require('webcommand'),
+    parseUrl = require('webcommand').parseUrl,
+    generateUrl = require('webcommand').generateUrl,
     stream = require('event-stream');
 var request = require('request');
 
@@ -15,38 +17,25 @@ function createServer(cmdList){
     });
 
     app.post('/*', function(req,res){
-        var cmd = req.path.replace('/',''),
-            args = [].concat(req.query.args),
+        var wc = parseUrl(req.url),
             cStream= stream.through();
-        if (!req.query.args) args = null;
-
         cStream.on('error', function(err) {
             console.error(err);
         });
-        if(req.query.pipes){
-            var pipes=[],
-                curPipe;
-            
-            if(typeof (req.query.pipes)!=='string'){
-                pipes=  req.query.pipes;
-                curPipe=decodeURIComponent(pipes.shift());
-            }else{
-                curPipe=decodeURIComponent(req.query.pipes);
-            }
-            var urlPipes='';
-            if(pipes.length){
-                //if first arg in query string use ?
-                if(curPipe.indexOf('?')===-1) urlPipes= '?'
-                else urlPipes= '&';
-                urlPipes = urlPipes +pipes.map(function(pipe){return 'pipes='+encodeURIComponent(pipe);}).join('&');
-            }
+        if(wc.pipes){
+            var curPipe = wc.pipes.shift(),
+                purl = generateUrl({
+                cmd : curPipe.cmd,
+                args : curPipe.args,
+                pipes : wc.pipes
+            });
             var iStream= stream.through();
-            iStream.pipe(request.post(curPipe+urlPipes)).pipe(res);
-            webCommand.webCommand(cmd,args, req, iStream, cStream);
-        }else{
-            webCommand.webCommand(cmd,args, req, res, cStream);
+            iStream.pipe(request.post(purl)).pipe(res);
+            webCommand.webCommand(wc.cmd,wc.args, req, iStream, cStream);
+        }
+        else{
+            webCommand.webCommand(wc.cmd,wc.args, req, res, cStream);
         }
     });
-
     return app;
 }
