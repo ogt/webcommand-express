@@ -13,18 +13,20 @@ function createServer(cmdList){
     var app = express();
     app.use(cors());
     app.get('/getCommands', cors(), function(req,res) {
-        res.send(JSON.stringify(webCommand.getCommandList()));
+        res.json(webCommand.getCommandList());
     });
 
     app.post('/*', function(req,res){
         var wc = parseUrl(req.url),
             cStream= stream.through();
         cStream.on('error', function(err) {
+            if (err.name == 'COMMAND_NOT_ALLOWED') res.send(500, err);
             console.error(err);
         });
         if(wc.pipes){
             var curPipe = wc.pipes.shift(),
                 purl = generateUrl({
+                base : curPipe.base,
                 cmd : curPipe.cmd,
                 args : curPipe.args,
                 pipes : wc.pipes
