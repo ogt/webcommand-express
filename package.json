@@ -19,6 +19,6 @@
   "devDependencies": {
     "tap": "~0.4.3",
     "jshint": "~2.1.4",
-    "getport": "~0.1.0",
+    "getport": "~0.1.0"
   }
 }
