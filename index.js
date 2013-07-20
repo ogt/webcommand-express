@@ -20,8 +20,11 @@ function createServer(cmdList){
         var wc = parseUrl(req.url),
             cStream= stream.through();
         cStream.on('error', function(err) {
-            if (err.name == 'COMMAND_NOT_ALLOWED') res.send(500, err);
-            console.error(err);
+            var ret = { error : err.name, message : err.message, stack : err.stack };
+            if (err.name == 'COMMAND_NOT_ALLOWED') res.status(403, ret);
+            else if (err.name == 'COMMAND_NOT_FOUND') res.status(501, ret);
+            else if (err.name == 'COMMAND_EXITED_ABNORMALLY') res.status(400, ret);
+            else res.status(500, ret);
         });
         if(wc.pipes){
             var curPipe = wc.pipes.shift(),
