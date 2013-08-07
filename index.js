@@ -35,7 +35,7 @@ function createServer(cmdList){
                 pipes : wc.pipes
             });
             var iStream= stream.through();
-            iStream.pipe(require('through-logged')()).pipe(request.post(purl)).pipe(res);
+            iStream.pipe(request.post(purl)).pipe(res);
             webCommand.webCommand(wc.cmd,wc.args, req, iStream, cStream);
         }
         else{
