@@ -3,6 +3,7 @@ var express = require('express'),
     webcommand = require('webcommand'),
     parseUrl = require('webcommand').parseUrl,
     generateUrl = require('webcommand').generateUrl,
+    logStream = require('through-logged'),
     stream = require('event-stream');
 var request = require('request');
 
@@ -18,6 +19,7 @@ function createServer(cmdList){
 
     app.post('/*', function(req,res){
         var wc = parseUrl(req.url),
+            eStream= logStream(),
             cStream= stream.through();
         cStream.on('error', function(err) {
             console.log('ERROR : ', err.name);
@@ -31,17 +33,18 @@ function createServer(cmdList){
         if(wc.pipes){
             var curPipe = wc.pipes.shift(),
                 purl = generateUrl({
-                base : curPipe.base,
-                cmd : curPipe.cmd,
-                args : curPipe.args,
-                pipes : wc.pipes
-            });
+                    base : curPipe.base,
+                    cmd : curPipe.cmd,
+                    args : curPipe.args,
+                    pipes : wc.pipes
+                });
             var iStream= stream.through();
-            iStream.pipe(require('through-logged')()).pipe(request.post(purl)).pipe(res);
-            webCommand.webCommand(wc.cmd,wc.args, req, iStream, cStream);
+//            iStream.pipe(require('through-logged')()).pipe(request.post(purl)).pipe(res);
+            iStream.pipe(request.post(purl)).pipe(res);
+            webCommand.webCommand(wc.cmd,wc.args, req, iStream, eStream, cStream);
         }
         else{
-            webCommand.webCommand(wc.cmd,wc.args, req, res, cStream);
+            webCommand.webCommand(wc.cmd,wc.args, req, res, eStream, cStream);
         }
     });
     return app;
